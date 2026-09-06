@@ -1,0 +1,6 @@
+{
+  "name": "MASALA EXPRESS",
+  "description": "A complete full-stack restaurant food ordering application with separate Customer and Restaurant Admin roles, dynamic menus, automatic delivery fee calculations, and online payment details.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

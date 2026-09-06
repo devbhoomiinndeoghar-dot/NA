@@ -1,0 +1,320 @@
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
+import { User, MenuCategory, MenuItem, Order, RestaurantSettings } from "../src/types";
+
+const DB_DIR = path.join(process.cwd(), "data");
+const DB_FILE = path.join(DB_DIR, "db.json");
+
+interface DatabaseSchema {
+  users: User[];
+  categories: MenuCategory[];
+  menuItems: MenuItem[];
+  orders: Order[];
+  settings: RestaurantSettings;
+}
+
+// SHA-256 Password hashing function
+export function hashPassword(password: string): string {
+  return crypto.createHash("sha256").update(password).digest("hex");
+}
+
+const defaultCategories: MenuCategory[] = [
+  { id: "cat-breakfast", name: "Breakfast" },
+  { id: "cat-tea", name: "Tea & Coffee" },
+  { id: "cat-soup", name: "Soup" },
+  { id: "cat-tandoori", name: "Tandoori Appetizer" },
+  { id: "cat-appetizer", name: "Appetizer" },
+  { id: "cat-maincourse", name: "Indian Main Course" },
+  { id: "cat-breads", name: "Breads" },
+  { id: "cat-chinese", name: "Chinese Main Course" },
+  { id: "cat-rice", name: "Rice & Noodles" },
+  { id: "cat-accompaniments", name: "Accompaniments" },
+  { id: "cat-beverages", name: "Beverages" },
+  { id: "cat-dessert", name: "Dessert" },
+];
+
+const defaultMenuItems: MenuItem[] = [
+  // Breakfast
+  { id: "bf-1", categoryId: "cat-breakfast", name: "Poori Bhaji (4pcs)", description: "Fresh hot pooris served with spiced potato bhaji", price: 129, availability: "IN_STOCK" },
+  { id: "bf-2", categoryId: "cat-breakfast", name: "Chole Bhature (2pcs)", description: "Fluffy fried bhature served with rich tangy chickpeas", price: 139, availability: "IN_STOCK" },
+  { id: "bf-3", categoryId: "cat-breakfast", name: "Aloo Paratha (2pcs)", description: "Griddle toasted flatbreads stuffed with spiced mashed potatoes", price: 149, availability: "IN_STOCK" },
+  { id: "bf-4", categoryId: "cat-breakfast", name: "Sattu Paratha (2pcs)", description: "Traditional roasted chickpea flour stuffed paratha", price: 149, availability: "IN_STOCK" },
+  { id: "bf-5", categoryId: "cat-breakfast", name: "Gobhi Paratha (2pcs)", description: "Spiced cauliflower stuffed flatbread", price: 159, availability: "IN_STOCK" },
+  { id: "bf-6", categoryId: "cat-breakfast", name: "Paneer Paratha (2pcs)", description: "Grated fresh cottage cheese parathas", price: 169, availability: "IN_STOCK" },
+  { id: "bf-7", categoryId: "cat-breakfast", name: "Veg Sandwich", description: "Fresh sliced vegetables with green chutney", price: 89, availability: "IN_STOCK" },
+  { id: "bf-8", categoryId: "cat-breakfast", name: "Veg Grilled Sandwich", description: "Grilled sandwich with crisp vegetable filling", price: 129, availability: "IN_STOCK" },
+  { id: "bf-9", categoryId: "cat-breakfast", name: "Veg Grilled Cheese Sandwich", description: "Mouth-melting cheese and veggie grilled sandwich", price: 169, availability: "IN_STOCK" },
+  { id: "bf-10", categoryId: "cat-breakfast", name: "Potato Grilled Sandwich", description: "Spiced potato masala sandwich grilled crisp", price: 159, availability: "IN_STOCK" },
+  { id: "bf-11", categoryId: "cat-breakfast", name: "Butter / Jam Toast", description: "Crispy double toasted bread with butter or mixed fruit jam", price: 59, availability: "IN_STOCK" },
+  { id: "bf-12", categoryId: "cat-breakfast", name: "Poha", description: "Flattened rice tempered with mustard seeds, curry leaves, and peanuts", price: 99, availability: "IN_STOCK" },
+
+  // Tea & Coffee
+  { id: "tc-1", categoryId: "cat-tea", name: "Milk Tea", description: "Classic hot brewed tea with milk", price: 29, availability: "IN_STOCK" },
+  { id: "tc-2", categoryId: "cat-tea", name: "Lemon Tea", description: "Tangy and refreshing black tea with lemon juice", price: 29, availability: "IN_STOCK" },
+  { id: "tc-3", categoryId: "cat-tea", name: "Masala Tea", description: "Indian chai infused with cardamoms, cloves, ginger, and cinnamon", price: 39, availability: "IN_STOCK" },
+  { id: "tc-4", categoryId: "cat-tea", name: "Green Tea", description: "Warm and healthy organic green tea", price: 39, availability: "IN_STOCK" },
+  { id: "tc-5", categoryId: "cat-tea", name: "Black Tea", description: "Robust hot black tea without milk", price: 29, availability: "IN_STOCK" },
+  { id: "tc-6", categoryId: "cat-tea", name: "Black Coffee", description: "Strong hot black coffee", price: 39, availability: "IN_STOCK" },
+  { id: "tc-7", categoryId: "cat-tea", name: "Milk Coffee", description: "Creamy traditional hot milk coffee", price: 39, availability: "IN_STOCK" },
+  { id: "tc-8", categoryId: "cat-tea", name: "Hot Milk by Glass", description: "Fresh sweetened warm milk", price: 59, availability: "IN_STOCK" },
+
+  // Soup
+  { id: "sp-1", categoryId: "cat-soup", name: "Veg Hot & Sour Soup", description: "Spicy and sour soup loaded with minced veggies", price: 119, availability: "IN_STOCK" },
+  { id: "sp-2", categoryId: "cat-soup", name: "Veg Manchow Soup", description: "Thick Chinese soup served with crispy noodles", price: 119, availability: "IN_STOCK" },
+  { id: "sp-3", categoryId: "cat-soup", name: "Veg Sweetcorn Soup", description: "Comforting mild soup with sweet corn kernels", price: 119, availability: "IN_STOCK" },
+  { id: "sp-4", categoryId: "cat-soup", name: "Veg Clear Soup", description: "Light nutritious broth with fresh garden vegetables", price: 119, availability: "IN_STOCK" },
+  { id: "sp-5", categoryId: "cat-soup", name: "Lemon Coriander Soup", description: "Zesty lemon broth flavored with fresh coriander", price: 119, availability: "IN_STOCK" },
+  { id: "sp-6", categoryId: "cat-soup", name: "Cream of Tomato Soup", description: "Rich velvety tomato soup with butter and croutons", price: 129, availability: "IN_STOCK" },
+  { id: "sp-7", categoryId: "cat-soup", name: "Cream of Mushroom Soup", description: "Earthy mushroom soup blended with fresh cream", price: 139, availability: "IN_STOCK" },
+
+  // Tandoori Appetizer
+  { id: "ta-1", categoryId: "cat-tandoori", name: "Paneer Tikka", description: "Marinated cottage cheese cubes skewered and grilled in tandoor", price: 239, availability: "IN_STOCK" },
+  { id: "ta-2", categoryId: "cat-tandoori", name: "Paneer Shashlik Tikka", description: "Paneer tikka cooked with onions, bell peppers, and tomatoes", price: 249, availability: "IN_STOCK" },
+  { id: "ta-3", categoryId: "cat-tandoori", name: "Paneer Malai Tikka", description: "Melt-in-mouth paneer cubes marinated in cream, cheese, and cardamom", price: 269, availability: "IN_STOCK" },
+  { id: "ta-4", categoryId: "cat-tandoori", name: "Paneer Achari Tikka", description: "Spiced paneer cubes with pickling spices cooked in clay oven", price: 249, availability: "IN_STOCK" },
+  { id: "ta-5", categoryId: "cat-tandoori", name: "Paneer Hariyali Tikka", description: "Paneer marinated in fresh coriander, mint, and spinach paste", price: 269, availability: "IN_STOCK" },
+  { id: "ta-6", categoryId: "cat-tandoori", name: "Veg Kabab Platter", description: "Assorted platter of chef's best tandoori vegetarian kebabs", price: 329, availability: "IN_STOCK" },
+  { id: "ta-7", categoryId: "cat-tandoori", name: "Harabhara Kabab", description: "Fried patties made of spinach, green peas, and potatoes", price: 219, availability: "IN_STOCK" },
+  { id: "ta-8", categoryId: "cat-tandoori", name: "Mushroom Tikka", description: "Clay oven roasted spiced fresh mushrooms", price: 249, availability: "IN_STOCK" },
+  { id: "ta-9", categoryId: "cat-tandoori", name: "Mushroom Achari Tikka", description: "Achari masala marinated roasted mushrooms", price: 259, availability: "IN_STOCK" },
+  { id: "ta-10", categoryId: "cat-tandoori", name: "Soyachaap Tikka", description: "Soya chaap chunks marinated in yogurt spices and grilled", price: 259, availability: "IN_STOCK" },
+  { id: "ta-11", categoryId: "cat-tandoori", name: "Soyachaap Malai Tikka", description: "Creamy mild marinated grilled soya chaap chunks", price: 269, availability: "IN_STOCK" },
+  { id: "ta-12", categoryId: "cat-tandoori", name: "Soyachaap Achari Tikka", description: "Tangy pickled-spiced roasted soya chaap", price: 259, availability: "IN_STOCK" },
+  { id: "ta-13", categoryId: "cat-tandoori", name: "Paneer Sheek Kabab", description: "Minced paneer with herbs and spices skewered in tandoor", price: 229, availability: "IN_STOCK" },
+  { id: "ta-14", categoryId: "cat-tandoori", name: "Veg Sheek Kabab", description: "Skewered minced mixed vegetables with Indian spices", price: 219, availability: "IN_STOCK" },
+
+  // Appetizer
+  { id: "ap-1", categoryId: "cat-appetizer", name: "Paneer Pakoda", description: "Spiced batter-fried paneer fritters served with chutney", price: 219, availability: "IN_STOCK" },
+  { id: "ap-2", categoryId: "cat-appetizer", name: "Onion Pakoda", description: "Crispy onion fritters seasoned with carom seeds", price: 159, availability: "IN_STOCK" },
+  { id: "ap-3", categoryId: "cat-appetizer", name: "Veg Pakoda", description: "Golden fried mixed vegetable pakodas", price: 169, availability: "IN_STOCK" },
+  { id: "ap-4", categoryId: "cat-appetizer", name: "Paneer Chilli Dry", description: "Wok-tossed paneer with bell peppers, garlic, and green chillies", price: 229, availability: "IN_STOCK" },
+  { id: "ap-5", categoryId: "cat-appetizer", name: "Paneer 65", description: "Deep-fried spicy paneer tempered with curry leaves and yogurt", price: 229, availability: "IN_STOCK" },
+  { id: "ap-6", categoryId: "cat-appetizer", name: "Paneer Dry Fry", description: "Golden crispy fried paneer chunks in dry masala", price: 249, availability: "IN_STOCK" },
+  { id: "ap-7", categoryId: "cat-appetizer", name: "Mushroom Chilli Dry", description: "Fresh mushrooms stir-fried with capsicum, onions, and soya sauce", price: 219, availability: "IN_STOCK" },
+  { id: "ap-8", categoryId: "cat-appetizer", name: "Crispy Chilli Babycorn", description: "Batter-fried baby corn tossed in a sweet-spicy chilli sauce", price: 219, availability: "IN_STOCK" },
+  { id: "ap-9", categoryId: "cat-appetizer", name: "American Corn Salt & Pepper", description: "Crispy corn kernels tossed with freshly crushed black pepper and onions", price: 219, availability: "IN_STOCK" },
+  { id: "ap-10", categoryId: "cat-appetizer", name: "Mushroom Salt & Pepper", description: "Crispy fried mushrooms seasoned with salt and peppercorns", price: 219, availability: "IN_STOCK" },
+  { id: "ap-11", categoryId: "cat-appetizer", name: "Vegetable Manchurian Dry", description: "Deep-fried mixed veg balls in dry tangy garlic sauce", price: 169, availability: "IN_STOCK" },
+  { id: "ap-12", categoryId: "cat-appetizer", name: "French Fries", description: "Classic salted crispy potato sticks", price: 119, availability: "IN_STOCK" },
+  { id: "ap-13", categoryId: "cat-appetizer", name: "Honey Chilly Potato", description: "Crisp potato fingers tossed in honey-chilli sauce", price: 149, availability: "IN_STOCK" },
+  { id: "ap-14", categoryId: "cat-appetizer", name: "Veg Lollipop", description: "Savory mixed vegetable lollipops served with schezwan sauce", price: 219, availability: "IN_STOCK" },
+
+  // Indian Main Course
+  { id: "mc-1", categoryId: "cat-maincourse", name: "Yellow Dal Fry", description: "Yellow lentils cooked with garlic, onions, tomatoes and butter", price: 129, availability: "IN_STOCK" },
+  { id: "mc-2", categoryId: "cat-maincourse", name: "Yellow Dal Tadka", description: "Yellow dal tempered with cumin, dry red chillies, and ghee", price: 139, availability: "IN_STOCK" },
+  { id: "mc-3", categoryId: "cat-maincourse", name: "Chole Rasile", description: "Classic spiced chickpeas cooked in a rich onion-tomato gravy", price: 199, availability: "IN_STOCK" },
+  { id: "mc-4", categoryId: "cat-maincourse", name: "Chana Masala", description: "Dry-ish spiced chickpeas with ginger and green chillies", price: 199, availability: "IN_STOCK" },
+  { id: "mc-5", categoryId: "cat-maincourse", name: "Dal Makhani", description: "Slow-cooked black lentils with kidney beans, cream, and butter", price: 179, availability: "IN_STOCK" },
+  { id: "mc-6", categoryId: "cat-maincourse", name: "Rajma Masala", description: "Soft red kidney beans cooked in a thick aromatic gravy", price: 189, availability: "IN_STOCK" },
+  { id: "mc-7", categoryId: "cat-maincourse", name: "Aloo Jhuri Bhaja", description: "Matchstick-thin crispy fried potatoes - a Bengali specialty", price: 129, availability: "IN_STOCK" },
+  { id: "mc-8", categoryId: "cat-maincourse", name: "Aloo Dum", description: "Baby potatoes slow-cooked in a spiced tomato gravy", price: 179, availability: "IN_STOCK" },
+  { id: "mc-9", categoryId: "cat-maincourse", name: "Aloo Posto", description: "Potatoes cooked in an earthy poppy seed paste", price: 219, availability: "IN_STOCK" },
+  { id: "mc-10", categoryId: "cat-maincourse", name: "Mix Veg", description: "Assorted seasonal vegetables cooked in an aromatic spice blend", price: 199, availability: "IN_STOCK" },
+  { id: "mc-11", categoryId: "cat-maincourse", name: "Paneer Kadhai", description: "Cottage cheese cooked with bell peppers, tomatoes and freshly ground kadhai spices", price: 259, availability: "IN_STOCK" },
+  { id: "mc-12", categoryId: "cat-maincourse", name: "Paneer Butter Masala", description: "Rich, creamy, and sweet tomato-based paneer curry", price: 269, availability: "IN_STOCK" },
+  { id: "mc-13", categoryId: "cat-maincourse", name: "Paneer Tikka Masala", description: "Tandoori grilled paneer tikka tossed in a spicy gravy", price: 289, availability: "IN_STOCK" },
+  { id: "mc-14", categoryId: "cat-maincourse", name: "Shahi Paneer", description: "Royal sweetish gravy cooked with cashews, cream, and paneer", price: 289, availability: "IN_STOCK" },
+  { id: "mc-15", categoryId: "cat-maincourse", name: "Malai Kofta", description: "Fried paneer and potato dumplings in a rich, mild, sweetish cashew gravy", price: 289, availability: "IN_STOCK" },
+
+  // Breads
+  { id: "br-1", categoryId: "cat-breads", name: "Tawa Roti Plain", description: "Standard wheat flatbread cooked on griddle", price: 19, availability: "IN_STOCK" },
+  { id: "br-2", categoryId: "cat-breads", name: "Tawa Roti Butter", description: "Wheat griddle flatbread with a layer of butter", price: 29, availability: "IN_STOCK" },
+  { id: "br-3", categoryId: "cat-breads", name: "Tandoori Roti Plain", description: "Clay-oven baked whole wheat bread", price: 39, availability: "IN_STOCK" },
+  { id: "br-4", categoryId: "cat-breads", name: "Tandoori Roti Butter", description: "Clay-oven baked wheat bread brushed with butter", price: 49, availability: "IN_STOCK" },
+  { id: "br-5", categoryId: "cat-breads", name: "Misi Roti", description: "Savory spiced chickpea-flour based flatbread", price: 69, availability: "IN_STOCK" },
+  { id: "br-6", categoryId: "cat-breads", name: "Plain Naan", description: "Fine flour flatbread baked in tandoor", price: 59, availability: "IN_STOCK" },
+  { id: "br-7", categoryId: "cat-breads", name: "Butter Naan", description: "Fine flour tandoor bread layered with rich butter", price: 69, availability: "IN_STOCK" },
+  { id: "br-8", categoryId: "cat-breads", name: "Garlic Naan", description: "Naan infused with minced garlic and butter", price: 79, availability: "IN_STOCK" },
+  { id: "br-9", categoryId: "cat-breads", name: "Lachha Paratha", description: "Multi-layered crispy whole wheat bread", price: 69, availability: "IN_STOCK" },
+
+  // Chinese Main Course
+  { id: "cn-1", categoryId: "cat-chinese", name: "Paneer Chilli Gravy", description: "Cottage cheese chunks cooked in soy-chilli gravy", price: 249, availability: "IN_STOCK" },
+  { id: "cn-2", categoryId: "cat-chinese", name: "Veg Manchurian Gravy", description: "Fried vegetable balls in dark, aromatic garlic-soy gravy", price: 189, availability: "IN_STOCK" },
+  { id: "cn-3", categoryId: "cat-chinese", name: "Mushroom Chilli Gravy", description: "Mushrooms in spicy Chinese gravy", price: 249, availability: "IN_STOCK" },
+
+  // Rice & Noodles
+  { id: "rn-1", categoryId: "cat-rice", name: "Steamed Rice", description: "Fluffy steamed long grain basmati rice", price: 119, availability: "IN_STOCK" },
+  { id: "rn-2", categoryId: "cat-rice", name: "Jeera Rice", description: "Basmati rice tempered with ghee and cumin seeds", price: 129, availability: "IN_STOCK" },
+  { id: "rn-3", categoryId: "cat-rice", name: "Veg Pulao", description: "Mild, fragrant rice with mixed garden vegetables", price: 139, availability: "IN_STOCK" },
+  { id: "rn-4", categoryId: "cat-rice", name: "Subz Biryani", description: "Aromatic slow cooked layered vegetable biryani with spices", price: 219, availability: "IN_STOCK" },
+  { id: "rn-5", categoryId: "cat-rice", name: "Veg Fried Rice", description: "Classic Chinese style stir-fried vegetable rice", price: 179, availability: "IN_STOCK" },
+  { id: "rn-6", categoryId: "cat-rice", name: "Veg Hakka Noodles", description: "Stir-fried noodles with crisp julienned vegetables", price: 149, availability: "IN_STOCK" },
+
+  // Accompaniments
+  { id: "ac-1", categoryId: "cat-accompaniments", name: "Green Salad", description: "Slices of fresh cucumber, carrots, tomatoes, and onions", price: 109, availability: "IN_STOCK" },
+  { id: "ac-2", categoryId: "cat-accompaniments", name: "Roasted Papad", description: "Crisp dry roasted lentil papad", price: 29, availability: "IN_STOCK" },
+  { id: "ac-3", categoryId: "cat-accompaniments", name: "Mix Raita", description: "Cool spiced yogurt with chopped vegetables", price: 89, availability: "IN_STOCK" },
+
+  // Beverages
+  { id: "bv-1", categoryId: "cat-beverages", name: "Packaged Drinking Water", description: "Chilled mineral water bottle", price: 19, availability: "IN_STOCK" },
+  { id: "bv-2", categoryId: "cat-beverages", name: "Lassi", description: "Rich, sweet churned yogurt drink with cardamom", price: 79, availability: "IN_STOCK" },
+  { id: "bv-3", categoryId: "cat-beverages", name: "Virgin Mojito", description: "Refreshing blend of mint, lime, and sparkling soda", price: 109, availability: "IN_STOCK" },
+  { id: "bv-4", categoryId: "cat-beverages", name: "Cold Coffee", description: "Rich, creamy blended iced coffee", price: 149, availability: "IN_STOCK" },
+
+  // Dessert
+  { id: "ds-1", categoryId: "cat-dessert", name: "Gulabjamun (2pcs)", description: "Hot golden milk dumplings soaked in sugar syrup", price: 49, availability: "IN_STOCK" },
+  { id: "ds-2", categoryId: "cat-dessert", name: "Gulabjamun with Ice-Cream", description: "Warm gulab jamuns paired with cold vanilla ice cream", price: 89, availability: "IN_STOCK" },
+  { id: "ds-3", categoryId: "cat-dessert", name: "Vanilla Ice-Cream", description: "Classic rich vanilla cream", price: 69, availability: "IN_STOCK" },
+];
+
+export class Database {
+  private static data: DatabaseSchema;
+
+  static initialize() {
+    if (!fs.existsSync(DB_DIR)) {
+      fs.mkdirSync(DB_DIR, { recursive: true });
+    }
+
+    if (fs.existsSync(DB_FILE)) {
+      try {
+        const raw = fs.readFileSync(DB_FILE, "utf-8");
+        this.data = JSON.parse(raw);
+        // Make sure settings always exist and has default parameters
+        if (!this.data.settings) {
+          this.data.settings = this.getDefaultSettings();
+        }
+        return;
+      } catch (err) {
+        console.error("Failed to read database, reinitializing...", err);
+      }
+    }
+
+    // Seed data
+    const adminUser: User = {
+      id: "admin-1",
+      email: "admin@masalaexpress.com",
+      passwordHash: hashPassword("adminpassword"),
+      name: "Masala Express Admin",
+      contactNumber: "7903494035",
+      deliveryAddress: "Barfani Tower, H.K Banerjee Road, Deoghar",
+      role: "RESTAURANT_ADMIN",
+    };
+
+    this.data = {
+      users: [adminUser],
+      categories: defaultCategories,
+      menuItems: defaultMenuItems,
+      orders: [],
+      settings: this.getDefaultSettings(),
+    };
+
+    this.save();
+  }
+
+  private static getDefaultSettings(): RestaurantSettings {
+    return {
+      upiId: "7903494035@upi",
+      upiName: "MASALA EXPRESS",
+      upiQrBase64: "", // Default empty, can be uploaded
+      gstRate: 5,
+      deliveryRatePerKm: 50,
+      maxDeliveryCharge: 100,
+      restaurantAddress: "AT V BAZAR, BARFANI TOWER, H.K BANERJEE ROAD, DEOGHAR, JHARKHAND 814112",
+      restaurantPhone: "7903494035",
+    };
+  }
+
+  private static save() {
+    try {
+      fs.writeFileSync(DB_FILE, JSON.stringify(this.data, null, 2), "utf-8");
+    } catch (err) {
+      console.error("Failed to save database file:", err);
+    }
+  }
+
+  static getUsers(): User[] {
+    this.ensureLoaded();
+    return this.data.users;
+  }
+
+  static saveUser(user: User) {
+    this.ensureLoaded();
+    const idx = this.data.users.findIndex((u) => u.id === user.id);
+    if (idx >= 0) {
+      this.data.users[idx] = user;
+    } else {
+      this.data.users.push(user);
+    }
+    this.save();
+  }
+
+  static getCategories(): MenuCategory[] {
+    this.ensureLoaded();
+    return this.data.categories;
+  }
+
+  static saveCategory(category: MenuCategory) {
+    this.ensureLoaded();
+    const idx = this.data.categories.findIndex((c) => c.id === category.id);
+    if (idx >= 0) {
+      this.data.categories[idx] = category;
+    } else {
+      this.data.categories.push(category);
+    }
+    this.save();
+  }
+
+  static deleteCategory(id: string) {
+    this.ensureLoaded();
+    this.data.categories = this.data.categories.filter((c) => c.id !== id);
+    // Delete or clean up menu items? We can just keep them or remove.
+    this.data.menuItems = this.data.menuItems.filter((i) => i.categoryId !== id);
+    this.save();
+  }
+
+  static getMenuItems(): MenuItem[] {
+    this.ensureLoaded();
+    return this.data.menuItems;
+  }
+
+  static saveMenuItem(item: MenuItem) {
+    this.ensureLoaded();
+    const idx = this.data.menuItems.findIndex((i) => i.id === item.id);
+    if (idx >= 0) {
+      this.data.menuItems[idx] = item;
+    } else {
+      this.data.menuItems.push(item);
+    }
+    this.save();
+  }
+
+  static deleteMenuItem(id: string) {
+    this.ensureLoaded();
+    this.data.menuItems = this.data.menuItems.filter((i) => i.id !== id);
+    this.save();
+  }
+
+  static getOrders(): Order[] {
+    this.ensureLoaded();
+    return this.data.orders;
+  }
+
+  static saveOrder(order: Order) {
+    this.ensureLoaded();
+    const idx = this.data.orders.findIndex((o) => o.id === order.id);
+    if (idx >= 0) {
+      this.data.orders[idx] = order;
+    } else {
+      this.data.orders.push(order);
+    }
+    this.save();
+  }
+
+  static getSettings(): RestaurantSettings {
+    this.ensureLoaded();
+    return this.data.settings;
+  }
+
+  static saveSettings(settings: RestaurantSettings) {
+    this.ensureLoaded();
+    this.data.settings = settings;
+    this.save();
+  }
+
+  private static ensureLoaded() {
+    if (!this.data) {
+      this.initialize();
+    }
+  }
+}
